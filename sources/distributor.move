@@ -22,11 +22,11 @@ module rinoco::distributor {
 
     public struct Distributor has key, store {
         id: UID,
-        supply: u16,
-        counter: u16,
+        supply: u64,
+        counter: u64,
         name: String,
         description: String,
-        registry: Table<u16, ID>,
+        registry: Table<u64, ID>,
         is_complete: bool
     }
 
@@ -101,7 +101,7 @@ module rinoco::distributor {
         ctx: &mut TxContext,
     ) {
         assert!(self.counter <= self.supply, EDistributingComplete);
-        assert!(!self.registry.contains(number as u16), ERinocoAlreadyDistributed);
+        assert!(!self.registry.contains(number), ERinocoAlreadyDistributed);
 
         let attributes = attributes::admin_new(keys, values, ctx);            
 
@@ -113,6 +113,8 @@ module rinoco::distributor {
             option::some(attributes),
             ctx,
         );
+
+        self.registry.add(number, object::id(&nft));
 
         let (mut kiosk, kiosk_owner_cap) = kiosk::new(ctx);
 

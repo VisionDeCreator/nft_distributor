@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { Transaction } from "@mysten/sui/transactions";
 import { client, admin_keypair } from './helpers.js';
 import data from "./data/metadata.json";
+import deployedObjects from "../deployed_objects.json";
 
 const path_to_scripts = dirname(fileURLToPath(import.meta.url));
 
@@ -12,12 +13,22 @@ const path_to_scripts = dirname(fileURLToPath(import.meta.url));
 console.log("Distributing NFTs");
 
 const keypair = admin_keypair();
-const packageId = "0xb3a99bd9823d82762821df8609f2461385d20836a6b385d4de19ee45e883942d";
 
+let txResponse = {
+  digest: ''
+};
 
 let revealObject = [];
 
 for (let i = 0; i < data.metadata.length; i++) {
+
+  if(txResponse?.digest as string != '') {
+    await client.waitForTransaction({
+      digest: txResponse.digest,
+      options: { showObjectChanges: true }
+    });
+  }
+
   console.log(`Distributing NFT #${i + 1}`);
   const nftData = data.metadata[i];    
 
@@ -44,11 +55,11 @@ for (let i = 0; i < data.metadata.length; i++) {
   });
 
   tx.moveCall({
-    target: `${packageId}::distributor::send_nft`,
+    target: `${deployedObjects.packageId}::distributor::send_nft`,
     arguments: [
-      tx.object("0xb6fbd543b042e1b87204b87afaa7fc4e402042bda59bd07659a4e04bb2b2bfe4"),
-      tx.object("0xd341b2190c5ddf9f5ff2702a8e24d7311e95da75339c1342a762cfab176aabc4"),
-      tx.object("0xb8b4c712cf9f76476f6b5af89c779b508cba18b3dfd9abc25a9a9dd739b88c1a"),
+      tx.object(deployedObjects.distributor.distributorCap),
+      tx.object(deployedObjects.distributor.distributor),
+      tx.object(deployedObjects.distributor.policy),
       tx.pure.u64(nftData.number),
       tx.pure.string(nftData.image_url),
       keys,
@@ -67,6 +78,8 @@ for (let i = 0; i < data.metadata.length; i++) {
   dataObject.digest = objectChange?.digest;
 
   revealObject.push(dataObject);
+
+  txResponse = objectChange;
 
   console.log(`NFT #${i + 1} has been revealed`);
 }
