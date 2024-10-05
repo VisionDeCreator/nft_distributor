@@ -1,0 +1,11 @@
+{
+    "packageId": "0xb3a99bd9823d82762821df8609f2461385d20836a6b385d4de19ee45e883942d",
+    "digest": "Ge7zeE9qsriqwoburMLYHXJaymnoczYvCURa8pwhZWGx",
+    "distributor": {
+        "distributor": "0xd341b2190c5ddf9f5ff2702a8e24d7311e95da75339c1342a762cfab176aabc4",
+        "distributorCap": "0xb6fbd543b042e1b87204b87afaa7fc4e402042bda59bd07659a4e04bb2b2bfe4",
+        "policy_cap": "0xc39079d2d28b103edcffdc0f5eb9172d09be81c653a4d3a276fb66ec1a95d5dc",
+        "policy": "0xb8b4c712cf9f76476f6b5af89c779b508cba18b3dfd9abc25a9a9dd739b88c1a",
+        "publisher": "0x36221d66f85474b271d93b2d83e98321ac9eafb46490abc89eff741bf88d69ad"
+    }
+}

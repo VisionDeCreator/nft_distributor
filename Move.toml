@@ -1,0 +1,11 @@
+[package]
+name = "Rinoco"
+edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet"}
+#Sui = { local = "/home/mentalist/sui/crates/sui-framework/packages/sui-framework" }
+
+[addresses]
+rinoco = "0x0"
+rinoco_treasury = "0x72fdb74443fe9476f3bb4db88c4ba7348e0a5a152fe0cce56d032ec4d28fdae2"
