@@ -14,15 +14,11 @@ module rinoco::rinoco {
     // This is the structure that will be used to create the NFTs
     public struct Rinoco has key, store {
         id: UID,
-        // This name will be joined with the number to create the NFT name
         collection_name: String,
         description: String,
-        // This url will be joined with the id to create the image url
         image_url: Option<String>,
         number: u64,
         attributes: Option<Attributes>,
-        // image: Option<Image>,
-        // water_cooler_id: ID
     }
 
     // === Public view functions ===
@@ -39,8 +35,6 @@ module rinoco::rinoco {
         description: String,
         image_url: Option<String>,
         attributes: Option<Attributes>,
-        // image: Option<Image>,
-        // water_cooler_id: ID,
         ctx: &mut TxContext,
     ): Rinoco {
         Rinoco {
@@ -61,10 +55,6 @@ module rinoco::rinoco {
         assert!(option::is_none(&self.attributes), EAttributesAlreadySet);
         option::fill(&mut self.attributes, attributes);
     }
-
-    // public(package) fun set_image(self: &mut Rinoco, image: Image) {
-    //     option::fill(&mut self.image, image);
-    // }
     
     public(package) fun set_image_url(self: &mut Rinoco, image_url: String) {
         option::swap_or_fill(&mut self.image_url, image_url);
