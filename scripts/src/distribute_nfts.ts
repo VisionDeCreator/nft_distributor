@@ -3,7 +3,7 @@ import { writeFileSync } from 'fs';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { Transaction } from "@mysten/sui/transactions";
-import { client, admin_keypair } from './helpers.js';
+import { client, admin_keypair, find_one_by_type } from './helpers.js';
 import data from "./data/metadata.json";
 import deployedObjects from "../deployed_objects.json";
 
@@ -40,7 +40,7 @@ for (let i = 0; i < data.metadata.length; i++) {
   let pureKeys = dataKeys.map(key => tx.pure.string(key));
   let pureValues = dataValues.map(value => tx.pure.string(value));
 
-  let dataObject: {number: number | null, digest: string | null} = {number:null, digest: null};
+  let dataObject: {objectId: string | null, number: number | null, digest: string | null} = {number:null, digest: null, objectId: null};
 
   tx.setGasBudget(1000000000);
 
@@ -55,7 +55,7 @@ for (let i = 0; i < data.metadata.length; i++) {
   });
 
   tx.moveCall({
-    target: `${deployedObjects.packageId}::distributor::send_nft`,
+    target: `${deployedObjects.packageId}::distributor::mint`,
     arguments: [
       tx.object(deployedObjects.distributor.distributorCap),
       tx.object(deployedObjects.distributor.distributor),
@@ -68,18 +68,43 @@ for (let i = 0; i < data.metadata.length; i++) {
     ]
   });
 
-  const objectChange = await client.signAndExecuteTransaction({
+  const response = await client.signAndExecuteTransaction({
     signer: keypair,
     transaction: tx,
-    options: { showObjectChanges: true },
+    options: {
+      showBalanceChanges: true,
+      showEffects: true,
+      showEvents: true,
+      showInput: false,
+      showObjectChanges: true,
+      showRawInput: false
+  }
   });
+  
+
+  const rinoco = `${deployedObjects.packageId}::rinoco::Rinoco`;
+
+  // Ensure objectChanges is defined and an array before using it
+if (response.objectChanges && Array.isArray(response.objectChanges)) {
+  const rinoco_id = find_one_by_type(response.objectChanges, rinoco);
+
+  if (!rinoco_id) {
+    console.log("Error: Could not find rinoco object");
+    process.exit(1);
+  }
+
+  dataObject.objectId = rinoco_id;
+} else {
+  console.log("Error: objectChanges is undefined or not an array");
+  process.exit(1);
+}
 
   dataObject.number = i + 1;
-  dataObject.digest = objectChange?.digest;
+  dataObject.digest = response?.digest;
 
   revealObject.push(dataObject);
 
-  txResponse = objectChange;
+  txResponse = response;
 
   console.log(`NFT #${i + 1} has been revealed`);
 }

@@ -59,7 +59,7 @@ if (published_change?.type !== "published") {
 }
 
 // get package id and shareobject in json format 
-export const deployed_address = {
+const deployed_address = {
     packageId: published_change.packageId,
     digest: published_change.digest,
     distributor: {
