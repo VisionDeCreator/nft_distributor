@@ -47,10 +47,6 @@ module rinoco::rinoco {
         }
     }
 
-    public(package) fun uid_mut(self: &mut Rinoco): &mut UID {
-        &mut self.id
-    }
-
     public(package) fun set_attributes(self: &mut Rinoco, attributes: Attributes) {
         assert!(option::is_none(&self.attributes), EAttributesAlreadySet);
         option::fill(&mut self.attributes, attributes);

@@ -6,7 +6,7 @@ module rinoco::distributor {
         display,
         transfer_policy,
         event,
-        kiosk::{Self, Kiosk, KioskOwnerCap},
+        kiosk::{Kiosk, KioskOwnerCap},
         transfer_policy::{TransferPolicy},
         table::{Self, Table},
     };
@@ -41,6 +41,8 @@ module rinoco::distributor {
 
     const EDistributionComplete: u64 = 0;
     const ERinocoAlreadyDistributed: u64 = 1;
+    const ENumberOutOfBounds: u64 = 2;
+    const ELessThanMin: u64 = 3;
 
 
     public struct DistributorCap has key { id: UID }
@@ -102,6 +104,11 @@ module rinoco::distributor {
         kiosk_owner_cap: KioskOwnerCap,
         ctx: &mut TxContext,
     ) {
+        assert!(!self.is_complete, ERinocoAlreadyDistributed);
+        assert!(number > 0, ELessThanMin);
+        assert!(number <= self.supply, ENumberOutOfBounds);
+        
+        self.counter = self.counter + 1;
         assert!(self.counter <= self.supply, EDistributionComplete);
         assert!(!self.registry.contains(number), ERinocoAlreadyDistributed);
 
@@ -133,7 +140,7 @@ module rinoco::distributor {
         transfer::public_share_object(kiosk);
 
 
-        self.counter = self.counter + 1;
+        
 
         if (self.counter == self.supply) {
             self.is_complete = true;
