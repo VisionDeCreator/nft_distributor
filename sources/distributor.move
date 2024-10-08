@@ -6,7 +6,7 @@ module rinoco::distributor {
         display,
         transfer_policy,
         event,
-        kiosk::{Self},
+        kiosk::{Self, Kiosk, KioskOwnerCap},
         transfer_policy::{TransferPolicy},
         table::{Self, Table},
     };
@@ -39,7 +39,7 @@ module rinoco::distributor {
 
     // === Error ===
 
-    const EDistributingComplete: u64 = 0;
+    const EDistributionComplete: u64 = 0;
     const ERinocoAlreadyDistributed: u64 = 1;
 
 
@@ -89,7 +89,7 @@ module rinoco::distributor {
     // === Package functions ===
 
     #[allow(lint(share_owned))]
-    public entry fun send_nft(
+    public entry fun mint(
         _: &DistributorCap,
         self: &mut Distributor,
         policy: &TransferPolicy<Rinoco>,
@@ -98,9 +98,11 @@ module rinoco::distributor {
         keys: vector<String>,
         values: vector<String>,
         owner: address,
+        mut kiosk: Kiosk,
+        kiosk_owner_cap: KioskOwnerCap,
         ctx: &mut TxContext,
     ) {
-        assert!(self.counter <= self.supply, EDistributingComplete);
+        assert!(self.counter <= self.supply, EDistributionComplete);
         assert!(!self.registry.contains(number), ERinocoAlreadyDistributed);
 
         let attributes = attributes::admin_new(keys, values, ctx);            
@@ -115,8 +117,6 @@ module rinoco::distributor {
         );
 
         self.registry.add(number, object::id(&nft));
-
-        let (mut kiosk, kiosk_owner_cap) = kiosk::new(ctx);
 
         event::emit(NFTMinted { 
             nft_id: object::id(&nft),

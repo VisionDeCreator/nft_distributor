@@ -178,3 +178,10 @@ dist
 
 # Finder (MacOS) folder config
 .DS_Store
+
+deployed_object_change.json
+deployed_objects.json
+distributed_objects.json
+object_change.json
+
+src/data/finalMetadata.json
