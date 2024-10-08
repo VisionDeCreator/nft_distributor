@@ -6,7 +6,7 @@ module rinoco::distributor {
         display,
         transfer_policy,
         event,
-        kiosk::{Kiosk, KioskOwnerCap},
+        kiosk::{Self},
         transfer_policy::{TransferPolicy},
         table::{Self, Table},
     };
@@ -100,8 +100,6 @@ module rinoco::distributor {
         keys: vector<String>,
         values: vector<String>,
         owner: address,
-        mut kiosk: Kiosk,
-        kiosk_owner_cap: KioskOwnerCap,
         ctx: &mut TxContext,
     ) {
         assert!(!self.is_complete, ERinocoAlreadyDistributed);
@@ -125,6 +123,8 @@ module rinoco::distributor {
 
         self.registry.add(number, object::id(&nft));
 
+        let (mut kiosk, kiosk_owner_cap) = kiosk::new(ctx);
+
         event::emit(NFTMinted { 
             nft_id: object::id(&nft),
             kiosk_id: object::id(&kiosk),
@@ -138,9 +138,6 @@ module rinoco::distributor {
 
         // Share the kiosk object publicly
         transfer::public_share_object(kiosk);
-
-
-        
 
         if (self.counter == self.supply) {
             self.is_complete = true;
