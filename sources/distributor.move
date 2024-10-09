@@ -87,9 +87,6 @@ module rinoco::distributor {
 
     // === Public view functions ===
 
-
-    // === Package functions ===
-
     #[allow(lint(share_owned))]
     public entry fun mint(
         _: &DistributorCap,
@@ -106,45 +103,74 @@ module rinoco::distributor {
 
         while (image_urls.length() > 0) {
             let number = numbers.pop_back();
+            let image_url = image_urls.pop_back();
+            let key = keys.pop_back();
+            let value = values.pop_back();
             let owner = owners.pop_back();
 
-            assert!(number > 0, ELessThanMin);
-            assert!(number <= self.supply, ENumberOutOfBounds);
-            
-            self.counter = self.counter + 1;
-            assert!(self.counter <= self.supply, EDistributionComplete);
-            assert!(!self.registry.contains(number), ERinocoAlreadyDistributed);
-
-            let image_url = image_urls.pop_back();
-            let attributes = attributes::admin_new(keys.pop_back(), values.pop_back(), ctx);           
-
-            let nft: Rinoco = rinoco::new(
+            mint_single(
+                self,
+                policy,
                 number,
-                self.name,
-                self.description,
-                option::some(image_url),
-                option::some(attributes),
-                ctx,
-            );
-
-            self.registry.add(number, object::id(&nft));
-
-            let (mut kiosk, kiosk_owner_cap) = kiosk::new(ctx);
-
-            event::emit(NFTMinted { 
-                nft_id: object::id(&nft),
-                kiosk_id: object::id(&kiosk),
-                minter: owner,
-            });
-
-            kiosk.lock(&kiosk_owner_cap, policy, nft);
-
-            // Transfer the kiosk owner capability to the owner
-            transfer::public_transfer(kiosk_owner_cap, owner);
-
-            // Share the kiosk object publicly
-            transfer::public_share_object(kiosk);
+                image_url,
+                key,
+                value,
+                owner,
+                ctx
+            )
         };
+    }
+
+
+    // === Package functions ===
+
+    #[allow(lint(share_owned))]
+    fun mint_single(
+        self: &mut Distributor,
+        policy: &TransferPolicy<Rinoco>,
+        number: u64,
+        image_url: String,
+        keys: vector<String>,
+        values: vector<String>,
+        owner: address,
+        ctx: &mut TxContext,
+    ) {
+        assert!(!self.is_complete, ERinocoAlreadyDistributed);
+        assert!(number > 0, ELessThanMin);
+        assert!(number <= self.supply, ENumberOutOfBounds);
+        
+        self.counter = self.counter + 1;
+        assert!(self.counter <= self.supply, EDistributionComplete);
+        assert!(!self.registry.contains(number), ERinocoAlreadyDistributed);
+
+        let attributes = attributes::admin_new(keys, values, ctx);            
+
+        let nft: Rinoco = rinoco::new(
+            number,
+            self.name,
+            self.description,
+            option::some(image_url),
+            option::some(attributes),
+            ctx,
+        );
+
+        self.registry.add(number, object::id(&nft));
+
+        let (mut kiosk, kiosk_owner_cap) = kiosk::new(ctx);
+
+        event::emit(NFTMinted { 
+            nft_id: object::id(&nft),
+            kiosk_id: object::id(&kiosk),
+            minter: owner,
+        });
+
+        kiosk.lock(&kiosk_owner_cap, policy, nft);
+
+        // Transfer the kiosk owner capability to the owner
+        transfer::public_transfer(kiosk_owner_cap, owner);
+
+        // Share the kiosk object publicly
+        transfer::public_share_object(kiosk);
 
         if (self.counter == self.supply) {
             self.is_complete = true;
