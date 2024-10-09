@@ -3,6 +3,7 @@ import { writeFileSync } from 'fs';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { Transaction } from "@mysten/sui/transactions";
+import _ from 'lodash';
 import { client, admin_keypair, find_one_by_type } from './helpers.js';
 import data from "./data/metadata.json";
 import deployedObjects from "../deployed_objects.json";
@@ -20,7 +21,10 @@ let txResponse = {
 
 let revealObject = [];
 
-for (let i = 0; i < data.length; i++) {
+const metaDataChuncks = _.chunk(data, 250);
+
+for (let i = 0; i < metaDataChuncks.length; i++) {
+
 
   if(txResponse?.digest as string != '') {
     await client.waitForTransaction({
@@ -29,30 +33,68 @@ for (let i = 0; i < data.length; i++) {
     });
   }
 
-  console.log(`Distributing NFT #${i + 1}`);
+  console.log(`Distributing NFT batch #${i + 1}`);
   const nftData = data[i];    
 
   const tx = new Transaction();
 
-  const dataKeys = Object.keys(nftData.attributes);
-  const dataValues: any[] = Object.values(nftData.attributes);
+  let numberArray: any = [];
+  let keyArray: any = [];
+  let valuesArray: any = [];
+  let imageArray: any = [];
 
-  let pureKeys = dataKeys.map(key => tx.pure.string(key));
-  let pureValues = dataValues.map(value => tx.pure.string(value));
+      // Here we loop over an individual subarray in order to create a transaction
+      for (let j = 0; j < metaDataChuncks[i].length; j++) {
+        const nftData = metaDataChuncks[i][j];
+  
+  
+        const dataKeys: any[] = Object.keys(nftData.attributes);
+        const dataValues: any[] = Object.values(nftData.attributes);
+  
+        let pureKeys = dataKeys.map(key => tx.pure.string(key));
+        let pureValues = dataValues.map(value => tx.pure.string(value));
+  
+        const keys = tx.makeMoveVec({
+          type: `0x1::string::String`,
+          elements: pureKeys
+        });
+  
+        const values = tx.makeMoveVec({
+          type: `0x1::string::String`,
+          elements: pureValues
+        });
+  
+        imageArray.push(tx.pure.string(nftData.image_url));
+        numberArray.push(tx.pure.u64(nftData.number));
+        keyArray.push(keys);
+        valuesArray.push(values);
+  
+      }
+  
+      const vetorKeys = tx.makeMoveVec({
+        type: `vector<0x1::string::String>`,
+        elements: keyArray
+      });
+  
+      const vetorValues = tx.makeMoveVec({
+        type: `vector<0x1::string::String>`,
+        elements: valuesArray
+      });
+  
+      const vectorNumbers = tx.makeMoveVec({
+        type: `u64`,
+        elements: numberArray
+      });
+      
+      const vectorImages = tx.makeMoveVec({
+        type: `0x1::string::String`,
+        elements: imageArray
+      });
+
 
   let dataObject: {objectId: string | null, number: number | null, digest: string | null} = {number:null, digest: null, objectId: null};
 
   tx.setGasBudget(1000000000);
-
-  const keys = tx.makeMoveVec({
-    type: `0x1::string::String`,
-    elements: pureKeys
-  });
-
-  const values = tx.makeMoveVec({
-    type: `0x1::string::String`,
-    elements: pureValues
-  });
 
   tx.moveCall({
     target: `${deployedObjects.packageId}::distributor::mint`,
@@ -60,10 +102,10 @@ for (let i = 0; i < data.length; i++) {
       tx.object(deployedObjects.distributor.distributorCap),
       tx.object(deployedObjects.distributor.distributor),
       tx.object(deployedObjects.distributor.policy),
-      tx.pure.u64(nftData.number),
-      tx.pure.string(nftData.image_url),
-      keys,
-      values,
+      vectorNumbers,
+      vectorImages,
+      vetorKeys,
+      vetorValues,
       tx.pure.address(nftData.address),
     ]
   });

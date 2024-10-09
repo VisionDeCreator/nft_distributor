@@ -129,4 +129,4 @@ if (!water_cooler_publisher_id) {
 deployed_address.distributor.publisher = water_cooler_publisher_id;
 
 writeFileSync(path.join(path_to_scripts, "../deployed_objects.json"), JSON.stringify(deployed_address, null, 4))
-// writeFileSync(path.join(path_to_scripts, "../deployed_object_change.json"), JSON.stringify(objectChanges, null, 4))
+writeFileSync(path.join(path_to_scripts, "../deployed_object_change.json"), JSON.stringify(objectChanges, null, 4))

@@ -39,7 +39,7 @@ export const user1_keypair = () => {
     return keypair
 }
 
-export const client = new SuiClient({ url: getFullnodeUrl('testnet') });
+export const client = new SuiClient({ url: getFullnodeUrl('devnet') });
 
 export const parse_amount = (amount: string) => {
     return parseInt(amount) / 1_000_000_000;

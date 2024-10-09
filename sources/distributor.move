@@ -95,49 +95,56 @@ module rinoco::distributor {
         _: &DistributorCap,
         self: &mut Distributor,
         policy: &TransferPolicy<Rinoco>,
-        number: u64,
-        image_url: String,
-        keys: vector<String>,
-        values: vector<String>,
-        owner: address,
+        mut numbers: vector<u64>,
+        mut image_urls: vector<String>,
+        mut keys: vector<vector<String>>,
+        mut values: vector<vector<String>>,
+        mut owners: vector<address>,
         ctx: &mut TxContext,
     ) {
         assert!(!self.is_complete, ERinocoAlreadyDistributed);
-        assert!(number > 0, ELessThanMin);
-        assert!(number <= self.supply, ENumberOutOfBounds);
-        
-        self.counter = self.counter + 1;
-        assert!(self.counter <= self.supply, EDistributionComplete);
-        assert!(!self.registry.contains(number), ERinocoAlreadyDistributed);
 
-        let attributes = attributes::admin_new(keys, values, ctx);            
+        while (image_urls.length() > 0) {
+            let number = numbers.pop_back();
+            let owner = owners.pop_back();
 
-        let nft: Rinoco = rinoco::new(
-            number,
-            self.name,
-            self.description,
-            option::some(image_url),
-            option::some(attributes),
-            ctx,
-        );
+            assert!(number > 0, ELessThanMin);
+            assert!(number <= self.supply, ENumberOutOfBounds);
+            
+            self.counter = self.counter + 1;
+            assert!(self.counter <= self.supply, EDistributionComplete);
+            assert!(!self.registry.contains(number), ERinocoAlreadyDistributed);
 
-        self.registry.add(number, object::id(&nft));
+            let image_url = image_urls.pop_back();
+            let attributes = attributes::admin_new(keys.pop_back(), values.pop_back(), ctx);           
 
-        let (mut kiosk, kiosk_owner_cap) = kiosk::new(ctx);
+            let nft: Rinoco = rinoco::new(
+                number,
+                self.name,
+                self.description,
+                option::some(image_url),
+                option::some(attributes),
+                ctx,
+            );
 
-        event::emit(NFTMinted { 
-            nft_id: object::id(&nft),
-            kiosk_id: object::id(&kiosk),
-            minter: owner,
-        });
+            self.registry.add(number, object::id(&nft));
 
-        kiosk.lock(&kiosk_owner_cap, policy, nft);
+            let (mut kiosk, kiosk_owner_cap) = kiosk::new(ctx);
 
-        // Transfer the kiosk owner capability to the owner
-        transfer::public_transfer(kiosk_owner_cap, owner);
+            event::emit(NFTMinted { 
+                nft_id: object::id(&nft),
+                kiosk_id: object::id(&kiosk),
+                minter: owner,
+            });
 
-        // Share the kiosk object publicly
-        transfer::public_share_object(kiosk);
+            kiosk.lock(&kiosk_owner_cap, policy, nft);
+
+            // Transfer the kiosk owner capability to the owner
+            transfer::public_transfer(kiosk_owner_cap, owner);
+
+            // Share the kiosk object publicly
+            transfer::public_share_object(kiosk);
+        };
 
         if (self.counter == self.supply) {
             self.is_complete = true;
