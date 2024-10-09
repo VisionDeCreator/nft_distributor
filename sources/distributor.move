@@ -89,7 +89,7 @@ module rinoco::distributor {
 
     #[allow(lint(share_owned))]
     public entry fun mint(
-        _: &DistributorCap,
+        cap: &DistributorCap,
         self: &mut Distributor,
         policy: &TransferPolicy<Rinoco>,
         mut numbers: vector<u64>,
@@ -102,13 +102,14 @@ module rinoco::distributor {
         assert!(!self.is_complete, ERinocoAlreadyDistributed);
 
         while (image_urls.length() > 0) {
-            let number = numbers.pop_back();
             let image_url = image_urls.pop_back();
+            let number = numbers.pop_back();
             let key = keys.pop_back();
             let value = values.pop_back();
             let owner = owners.pop_back();
 
             mint_single(
+                cap,
                 self,
                 policy,
                 number,
@@ -125,7 +126,8 @@ module rinoco::distributor {
     // === Package functions ===
 
     #[allow(lint(share_owned))]
-    fun mint_single(
+    public entry fun mint_single(
+        _: &DistributorCap,
         self: &mut Distributor,
         policy: &TransferPolicy<Rinoco>,
         number: u64,
